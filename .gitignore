@@ -18,3 +18,4 @@ job_search/config/profile.py
 # Local runtime data (regenerated on fetch)
 job_search/data/last_run.json
 job_search/data/saved_jobs.json
+job_search/data/slug_cache.json
