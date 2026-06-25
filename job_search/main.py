@@ -19,6 +19,14 @@ from pathlib import Path
 # Ensure project root is on the path regardless of where script is called from
 sys.path.insert(0, str(Path(__file__).parent))
 
+_PROFILE_PATH = Path(__file__).parent / "config" / "profile.py"
+if not _PROFILE_PATH.exists():
+    print("Error: config/profile.py not found.\n")
+    print("Create it from the template:")
+    print("  cp config/profile.example.py config/profile.py")
+    print("\nThen edit it with your skills, target locations, and minimum salary.")
+    sys.exit(1)
+
 from config.companies import COMPANIES
 from pipeline.discovery import run_discovery, load_cache
 from pipeline.fetcher import fetch_all
