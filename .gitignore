@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.DS_Store
+.claude/
+
+# Personal config (copy from profile.example.py)
+job_search/config/profile.py
+
+# Local runtime data (regenerated on fetch)
+job_search/data/last_run.json
+job_search/data/saved_jobs.json

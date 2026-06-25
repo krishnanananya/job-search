@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Search — Ananya Krishnan</title>
+  <style>
+    :root {
+      --bg:     #0b1120;
+      --surf:   #111827;
+      --surf2:  #162033;
+      --border: #1f2f47;
+      --text:   #e2e8f0;
+      --dim:    #94a3b8;
+      --sub:    #64748b;
+      --accent: #38bdf8;
+      --green:  #22c55e;
+      --blue:   #3b82f6;
+      --amber:  #f59e0b;
+      --orange: #f97316;
+      --red:    #ef4444;
+      --purple: #8b5cf6;
+      --c-qf:  #8b5cf6; --c-ts: #0ea5e9; --c-bk: #10b981;
+      --c-am:  #0d9488;  --c-vc: #ef4444; --c-cr: #f59e0b; --c-te: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px; height: 100vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* ── Header ─────────────────── */
+    header {
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      padding: 9px 20px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    header h1 { font-size: 14px; font-weight: 600; }
+    header h1 em { color: var(--accent); font-style: normal; }
+    #status-wrap { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--sub); }
+    #sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    #sdot.fetching { background: var(--amber); animation: blink 1s infinite; }
+    #sdot.error    { background: var(--red); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ── Tabs ───────────────────── */
+    #tab-bar {
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      padding: 0 20px; display: flex; align-items: flex-end; gap: 0;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 9px 18px 8px; border: none; background: none;
+      color: var(--sub); font-size: 13px; font-weight: 500;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: color .15s;
+    }
+    .tab-btn:hover { color: var(--dim); }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+    #saved-count {
+      display: inline-block; margin-left: 5px;
+      background: var(--amber); color: #0b1120;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 5px; border-radius: 10px;
+      vertical-align: middle;
+    }
+    #saved-count:empty { display: none; }
+
+    /* ── Filters (roles tab only) ─ */
+    #filters {
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      padding: 7px 20px; flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .flabel { font-size: 10px; font-weight: 600; text-transform: uppercase;
+              letter-spacing: .5px; color: var(--sub); white-space: nowrap; }
+
+    #search, #saved-search {
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surf2);
+      color: var(--text); font-size: 12px; width: 190px; outline: none;
+    }
+    #search:focus, #saved-search:focus { border-color: var(--accent); }
+    #search::placeholder, #saved-search::placeholder { color: var(--sub); }
+
+    .pgrp {
+      display: flex; gap: 2px; background: var(--surf2);
+      border: 1px solid var(--border); border-radius: 6px; padding: 2px;
+    }
+    .pill {
+      padding: 3px 10px; border-radius: 5px; border: none;
+      background: transparent; color: var(--sub);
+      font-size: 11px; font-weight: 500; cursor: pointer;
+      white-space: nowrap; transition: all .12s;
+    }
+    .pill:hover { color: var(--text); }
+    .pill.on     { background: var(--accent); color: #0b1120; }
+    .pill.on-c   { background: var(--purple); color: #fff; }
+    .pill.on-s   { background: var(--blue);   color: #fff; }
+
+    .tpill {
+      padding: 3px 9px; border-radius: 5px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--sub); font-size: 11px; font-weight: 500; cursor: pointer;
+      transition: all .12s;
+    }
+    .tpill:hover { color: var(--dim); }
+    .tpill.on { color: #fff; border-color: transparent; }
+    .tpill[data-cat="quant_fund"].on    { background: var(--c-qf); }
+    .tpill[data-cat="trading_shop"].on  { background: var(--c-ts); }
+    .tpill[data-cat="bank"].on          { background: var(--c-bk); }
+    .tpill[data-cat="asset_manager"].on { background: var(--c-am); }
+    .tpill[data-cat="vc"].on            { background: var(--c-vc); }
+    .tpill[data-cat="crypto"].on        { background: var(--c-cr); }
+    .tpill[data-cat="tech"].on          { background: var(--c-te); }
+
+    #stats { margin-left: auto; font-size: 11px; color: var(--sub); white-space: nowrap; }
+
+    /* ── Saved-tab toolbar ────────── */
+    #saved-toolbar {
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      padding: 8px 20px; flex-shrink: 0;
+      display: none; align-items: center; gap: 12px;
+    }
+    #saved-stats { font-size: 11px; color: var(--sub); }
+
+    /* ── Table ───────────────────── */
+    #table-wrap { flex: 1; overflow-y: auto; overflow-x: auto; }
+    #table-wrap::-webkit-scrollbar { width: 5px; height: 5px; }
+    #table-wrap::-webkit-scrollbar-track { background: transparent; }
+    #table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead { position: sticky; top: 0; z-index: 10; background: var(--surf2); }
+    thead th {
+      padding: 7px 10px; text-align: left;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--sub);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none;
+    }
+    thead th:hover { color: var(--dim); }
+    thead th.sorted { color: var(--accent); }
+    .sarr { margin-left: 3px; opacity: .4; }
+    thead th.sorted .sarr { opacity: 1; }
+
+    tbody tr { border-bottom: 1px solid rgba(31,47,71,.5); transition: background .1s; }
+    tbody tr:hover { background: var(--surf2); }
+    td { padding: 0 10px; height: 50px; vertical-align: middle; }
+
+    /* Score */
+    .col-sc { width: 56px; position: relative; }
+    .sc-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 26px; border-radius: 5px;
+      font-size: 12px; font-weight: 700;
+    }
+    .t-strong   { background: rgba(34,197,94,.15);  color: var(--green); }
+    .t-good     { background: rgba(59,130,246,.15); color: var(--blue); }
+    .t-moderate { background: rgba(245,158,11,.15); color: var(--amber); }
+    .t-stretch  { background: rgba(249,115,22,.15); color: var(--orange); }
+    .tbar { position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 0 2px 2px 0; }
+    .tbar.strong   { background: var(--green); }
+    .tbar.good     { background: var(--blue); }
+    .tbar.moderate { background: var(--amber); }
+    .tbar.stretch  { background: var(--orange); }
+
+    /* Company */
+    .col-co { width: 155px; }
+    .co-name { font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px; }
+    .tbadge { display: inline-block; margin-top: 2px; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+    .tb-qf { background: rgba(139,92,246,.18); color: var(--c-qf); }
+    .tb-ts { background: rgba(14,165,233,.18);  color: var(--c-ts); }
+    .tb-bk { background: rgba(16,185,129,.18);  color: var(--c-bk); }
+    .tb-am { background: rgba(13,148,136,.18);  color: var(--c-am); }
+    .tb-vc { background: rgba(239,68,68,.18);   color: var(--c-vc); }
+    .tb-cr { background: rgba(245,158,11,.18);  color: var(--c-cr); }
+    .tb-te { background: rgba(100,116,139,.18); color: var(--c-te); }
+
+    /* Title */
+    .col-ti { min-width: 220px; }
+    .ti-name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
+    .ti-reason { font-size: 10px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; margin-top: 1px; }
+
+    /* Location */
+    .col-lo { width: 100px; }
+    .loc-pill { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .loc-sf  { background: rgba(56,189,248,.12); color: var(--accent); }
+    .loc-nyc { background: rgba(139,92,246,.12); color: var(--purple); }
+
+    /* Salary */
+    .col-sa { width: 116px; }
+    .sal-val  { color: var(--green); font-weight: 500; font-size: 12px; }
+    .sal-none { color: var(--sub); font-size: 11px; }
+
+    /* Posted / Saved date */
+    .col-po { width: 72px; }
+    .po-val   { color: var(--dim); font-size: 11px; }
+    .po-fresh { color: var(--green); font-weight: 600; font-size: 11px; }
+
+    /* Match badge */
+    .col-mb { width: 72px; }
+    .mb-badge { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+    .mb-core    { background: rgba(139,92,246,.18); color: var(--purple); }
+    .mb-stretch { background: rgba(59,130,246,.15); color: var(--blue); }
+
+    /* Status (saved tab) */
+    .col-st { width: 130px; }
+    .status-sel {
+      padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border);
+      background: var(--surf2); color: var(--dim);
+      font-size: 11px; font-weight: 500; cursor: pointer; outline: none; width: 118px;
+    }
+    .status-sel:focus { border-color: var(--accent); }
+    .status-sel.st-saved        { color: var(--sub); }
+    .status-sel.st-applied      { color: var(--blue);   border-color: rgba(59,130,246,.4); }
+    .status-sel.st-interviewing { color: var(--amber);  border-color: rgba(245,158,11,.4); }
+    .status-sel.st-offer        { color: var(--green);  border-color: rgba(34,197,94,.4); }
+    .status-sel.st-rejected     { color: var(--red);    border-color: rgba(239,68,68,.4); }
+
+    /* Apply / actions */
+    .col-ap { width: 116px; text-align: right; }
+    .ap-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+    .bm-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 15px; padding: 2px 3px; color: var(--sub);
+      transition: color .15s, transform .1s; line-height: 1;
+    }
+    .bm-btn:hover { transform: scale(1.2); }
+    .bm-btn.saved { color: var(--amber); }
+    .rm-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 12px; padding: 2px 4px; color: var(--sub);
+      transition: color .15s; border-radius: 4px;
+    }
+    .rm-btn:hover { color: var(--red); background: rgba(239,68,68,.1); }
+    .apply-a {
+      display: inline-block; padding: 4px 11px; border-radius: 5px;
+      background: var(--accent); color: #0b1120;
+      font-size: 11px; font-weight: 700; text-decoration: none;
+      transition: opacity .12s; white-space: nowrap;
+    }
+    .apply-a:hover { opacity: .8; }
+
+    /* Empty */
+    .erow td { text-align: center; padding: 70px 0; color: var(--sub); }
+    .eico { font-size: 26px; margin-bottom: 6px; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 18px; right: 18px;
+      background: var(--surf2); border: 1px solid var(--accent);
+      color: var(--accent); padding: 7px 14px; border-radius: 7px;
+      font-size: 12px; font-weight: 500; display: none; z-index: 999;
+    }
+
+    /* ── Add Job button ─────────────── */
+    .add-job-btn {
+      padding: 4px 12px; border-radius: 6px;
+      background: none; border: 1px solid var(--accent);
+      color: var(--accent); font-size: 11px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: all .12s;
+    }
+    .add-job-btn:hover { background: rgba(56,189,248,.1); }
+    #saved-stats { margin-left: auto; }
+
+    /* ── Modal ──────────────────────── */
+    #modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.72);
+      display: none; align-items: center; justify-content: center; z-index: 200;
+    }
+    #modal {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 10px; width: 500px; max-width: 92vw;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .modal-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .modal-hdr h3 { font-size: 14px; font-weight: 600; }
+    .modal-hdr .modal-close-btn {
+      background: none; border: none; color: var(--sub); cursor: pointer;
+      font-size: 16px; padding: 2px 6px; border-radius: 4px; transition: color .12s;
+    }
+    .modal-hdr .modal-close-btn:hover { color: var(--text); }
+    .modal-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .url-row { display: flex; gap: 8px; }
+    .url-row input { flex: 1; }
+    .scrape-btn {
+      padding: 5px 12px; border-radius: 6px;
+      background: var(--surf); border: 1px solid var(--accent);
+      color: var(--accent); font-size: 12px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: all .12s;
+    }
+    .scrape-btn:hover { background: rgba(56,189,248,.1); }
+    .scrape-btn:disabled { opacity: .4; cursor: not-allowed; }
+    #scrape-status { font-size: 11px; min-height: 15px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.full { grid-column: 1/-1; }
+    .field label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--sub); }
+    .field input, .field textarea {
+      padding: 5px 9px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surf);
+      color: var(--text); font-size: 12px; outline: none;
+      font-family: inherit; resize: vertical;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); }
+    .field input::placeholder, .field textarea::placeholder { color: var(--sub); }
+    .modal-ftr {
+      padding: 12px 18px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .btn-cancel {
+      padding: 6px 16px; border-radius: 6px;
+      background: none; border: 1px solid var(--border);
+      color: var(--dim); font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all .12s;
+    }
+    .btn-cancel:hover { border-color: var(--dim); }
+    .btn-submit {
+      padding: 6px 16px; border-radius: 6px;
+      background: var(--accent); border: none;
+      color: #0b1120; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: opacity .12s;
+    }
+    .btn-submit:hover { opacity: .85; }
+    .tb-manual { background: rgba(139,92,246,.18); color: var(--purple); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1>Job Search &nbsp;·&nbsp; <em>Ananya Krishnan</em></h1>
+  <div id="status-wrap">
+    <div id="sdot"></div>
+    <span id="stxt">Loading…</span>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div id="tab-bar">
+  <button class="tab-btn active" data-tab="roles">Roles</button>
+  <button class="tab-btn" data-tab="saved">★ Saved <span id="saved-count"></span></button>
+</div>
+
+<!-- Roles filters -->
+<div id="filters">
+  <div class="frow">
+    <input id="search" type="text" placeholder="🔍  Search title or company…" />
+
+    <span class="flabel">Match</span>
+    <div class="pgrp" id="match-grp">
+      <button class="pill on" data-match="all">All</button>
+      <button class="pill"    data-match="core">Core</button>
+      <button class="pill"    data-match="stretch">Stretch</button>
+    </div>
+
+    <span class="flabel">Location</span>
+    <div class="pgrp" id="loc-grp">
+      <button class="pill on" data-loc="all">Both</button>
+      <button class="pill"    data-loc="SF Bay Area">SF</button>
+      <button class="pill"    data-loc="New York City">NYC</button>
+    </div>
+
+    <span class="flabel">Posted</span>
+    <div class="pgrp" id="posted-grp">
+      <button class="pill on" data-days="0">Any</button>
+      <button class="pill"    data-days="1">Today</button>
+      <button class="pill"    data-days="7">7d</button>
+      <button class="pill"    data-days="30">30d</button>
+    </div>
+
+    <span class="flabel">Per co</span>
+    <div class="pgrp" id="cap-grp">
+      <button class="pill"    data-cap="1">1</button>
+      <button class="pill on" data-cap="3">3</button>
+      <button class="pill"    data-cap="5">5</button>
+      <button class="pill"    data-cap="0">All</button>
+    </div>
+
+    <span id="stats"></span>
+  </div>
+  <div class="frow">
+    <span class="flabel">Type</span>
+    <button class="tpill on" data-cat="quant_fund">Quant Fund</button>
+    <button class="tpill on" data-cat="trading_shop">Trading</button>
+    <button class="tpill on" data-cat="bank">Bank</button>
+    <button class="tpill on" data-cat="asset_manager">Asset Mgr</button>
+    <button class="tpill on" data-cat="vc">VC</button>
+    <button class="tpill on" data-cat="crypto">Crypto</button>
+    <button class="tpill on" data-cat="tech">Tech / Fintech</button>
+  </div>
+</div>
+
+<!-- Saved tab toolbar -->
+<div id="saved-toolbar">
+  <input id="saved-search" type="text" placeholder="🔍  Search saved jobs…" />
+  <button class="add-job-btn" onclick="openModal()">+ Add Job</button>
+  <span id="saved-stats"></span>
+</div>
+
+<!-- Table -->
+<div id="table-wrap">
+  <table id="main-table">
+    <thead id="main-thead">
+      <tr>
+        <th class="col-sc sorted" data-col="composite">Score<span class="sarr">↓</span></th>
+        <th class="col-co" data-col="company">Company<span class="sarr"></span></th>
+        <th class="col-ti" data-col="title">Title<span class="sarr"></span></th>
+        <th class="col-lo" data-col="location_label">Location<span class="sarr"></span></th>
+        <th class="col-sa" data-col="salary_max">Salary<span class="sarr"></span></th>
+        <th class="col-po" data-col="posted_at">Posted<span class="sarr"></span></th>
+        <th class="col-mb" data-col="match_category">Match<span class="sarr"></span></th>
+        <th class="col-ap"></th>
+      </tr>
+    </thead>
+    <tbody id="jobs-body"></tbody>
+  </table>
+</div>
+
+<!-- Add Job modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <div class="modal-hdr">
+      <h3>Add Job to Tracker</h3>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="url-row">
+        <input id="scrape-url" type="url" placeholder="Paste job URL to auto-fill details…" />
+        <button class="scrape-btn" id="scrape-btn" onclick="fetchDetails()">Fetch Details</button>
+      </div>
+      <div id="scrape-status"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Company *</label>
+          <input id="f-company" type="text" placeholder="e.g. Two Sigma" />
+        </div>
+        <div class="field">
+          <label>Title *</label>
+          <input id="f-title" type="text" placeholder="e.g. Quantitative Researcher" />
+        </div>
+        <div class="field">
+          <label>Location</label>
+          <input id="f-location" type="text" placeholder="e.g. New York, NY" />
+        </div>
+        <div class="field">
+          <label>Salary</label>
+          <input id="f-salary" type="text" placeholder="e.g. $200k–$300k" />
+        </div>
+        <div class="field full">
+          <label>Notes</label>
+          <textarea id="f-notes" rows="2" placeholder="Referral source, why interested, deadline…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitManualJob()">Add to Tracker</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ────────────────────────────────────────────────
+  let allJobs   = [];   // enriched with _composite
+  let savedJobs = {};   // key → {job, status, saved_at}
+  let jobsMap   = {};   // key → job  (for safe save-button lookup)
+  let activeTab = 'roles';
+  let sortCol = 'composite', sortAsc = false;
+  let lastFetching = false, lastJobCount = 0;
+  const activeTypes = new Set(['quant_fund','trading_shop','bank','asset_manager','vc','crypto','tech']);
+  let activeMatch = 'all', activeLoc = 'all', activeDays = 0, perCoCap = 3;
+
+  // ── Composite score ──────────────────────────────────────
+  function compositeScore(j) {
+    const base = (j.score || 0) * 0.60;
+    let rec = 0;
+    if (j.posted_at) {
+      const d = (Date.now() - new Date(j.posted_at)) / 86400000;
+      rec = d<=1?30 : d<=3?25 : d<=7?20 : d<=14?12 : d<=30?6 : 0;
+    }
+    const mx = j.salary_max || j.salary_min || 0;
+    const sal = mx>=400000?10 : mx>=300000?8 : mx>=200000?6 : mx>=150000?4 : mx>0?0 : 5;
+    return Math.min(99, Math.round(base + rec + sal));
+  }
+
+  function tier(s) { return s>=70?'strong' : s>=50?'good' : s>=30?'moderate' : 'stretch'; }
+
+  // ── Type metadata ────────────────────────────────────────
+  const TM = {
+    quant_fund:    {label:'Quant',     cls:'tb-qf', cat:'quant_fund'},
+    trading_shop:  {label:'Trading',   cls:'tb-ts', cat:'trading_shop'},
+    crypto_trading:{label:'Crypto Trd',cls:'tb-cr', cat:'crypto'},
+    bank:          {label:'Bank',      cls:'tb-bk', cat:'bank'},
+    asset_manager: {label:'Asset Mgr', cls:'tb-am', cat:'asset_manager'},
+    vc:            {label:'VC',        cls:'tb-vc', cat:'vc'},
+    crypto:        {label:'Crypto',    cls:'tb-cr', cat:'crypto'},
+    fintech:       {label:'Fintech',   cls:'tb-te', cat:'tech'},
+    tech:          {label:'Tech',      cls:'tb-te', cat:'tech'},
+    other:         {label:'Other',     cls:'tb-te', cat:'tech'},
+  };
+  function filterCat(j) {
+    const r = j.company_category||'other';
+    return r==='crypto_trading'?'crypto' : r==='fintech'?'tech' : r;
+  }
+
+  // ── Job key ──────────────────────────────────────────────
+  function jobKey(j) {
+    return (j.company+'||'+j.title).toLowerCase().replace(/[^a-z0-9|]+/g,'-');
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function fmtSal(lo,hi) {
+    if (!lo&&!hi) return null;
+    const f = n => '$'+Math.round(n/1000)+'k';
+    return (lo&&hi&&lo!==hi) ? f(lo)+'–'+f(hi) : f(lo||hi);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d=(Date.now()-new Date(iso))/86400000;
+    if(d<1) return 'Today'; if(d<2) return '1d ago';
+    if(d<7) return Math.floor(d)+'d ago';
+    if(d<30) return Math.floor(d/7)+'w ago';
+    return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+  function fmtTs(ts) {
+    return new Date(ts*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+  function daysSince(iso) { return iso?(Date.now()-new Date(iso))/86400000:9999; }
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Tab switching ────────────────────────────────────────
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+    document.getElementById('filters').style.display       = tab==='roles'  ? '' : 'none';
+    document.getElementById('saved-toolbar').style.display = tab==='saved'  ? 'flex' : 'none';
+    render();
+  }
+
+  // ── Saved jobs API ────────────────────────────────────────
+  function isSaved(j) { return jobKey(j) in savedJobs; }
+
+  async function toggleSave(key) {
+    const j = jobsMap[key];
+    if (!j) return;
+    if (isSaved(j)) {
+      await fetch('/api/saved/'+encodeURIComponent(key), {method:'DELETE'});
+      delete savedJobs[key];
+      showToast('Removed from saved');
+    } else {
+      const body = {key, job: j, status:'saved'};
+      await fetch('/api/saved', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+      savedJobs[key] = {job:j, status:'saved', saved_at:Date.now()/1000};
+      showToast('Saved ★');
+    }
+    updateSavedCount();
+    render();
+  }
+
+  async function updateStatus(key, status) {
+    if (!savedJobs[key]) return;
+    savedJobs[key].status = status;
+    await fetch('/api/saved/'+encodeURIComponent(key), {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status}),
+    });
+  }
+
+  async function removeSaved(key) {
+    await fetch('/api/saved/'+encodeURIComponent(key), {method:'DELETE'});
+    delete savedJobs[key];
+    updateSavedCount();
+    render();
+    showToast('Removed');
+  }
+
+  function updateSavedCount() {
+    const n = Object.keys(savedJobs).length;
+    document.getElementById('saved-count').textContent = n > 0 ? n : '';
+  }
+
+  // ── Main render dispatcher ────────────────────────────────
+  function render() {
+    activeTab === 'saved' ? renderSaved() : renderRoles();
+  }
+
+  // ── Roles table ───────────────────────────────────────────
+  function renderRoles() {
+    // Rebuild thead for roles
+    document.getElementById('main-thead').innerHTML = `<tr>
+      <th class="col-sc ${sortCol==='composite'?'sorted':''}" data-col="composite">Score<span class="sarr">${sortCol==='composite'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-co ${sortCol==='company'?'sorted':''}" data-col="company">Company<span class="sarr">${sortCol==='company'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-ti ${sortCol==='title'?'sorted':''}" data-col="title">Title<span class="sarr">${sortCol==='title'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-lo ${sortCol==='location_label'?'sorted':''}" data-col="location_label">Location<span class="sarr">${sortCol==='location_label'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-sa ${sortCol==='salary_max'?'sorted':''}" data-col="salary_max">Salary<span class="sarr">${sortCol==='salary_max'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-po ${sortCol==='posted_at'?'sorted':''}" data-col="posted_at">Posted<span class="sarr">${sortCol==='posted_at'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-mb ${sortCol==='match_category'?'sorted':''}" data-col="match_category">Match<span class="sarr">${sortCol==='match_category'?(sortAsc?'↑':'↓'):''}</span></th>
+      <th class="col-ap"></th>
+    </tr>`;
+
+    attachSortHandlers();
+
+    const q = document.getElementById('search').value.toLowerCase();
+    let rows = allJobs.filter(j => {
+      if (activeMatch !== 'all' && j.match_category !== activeMatch) return false;
+      if (activeLoc   !== 'all' && j.location_label !== activeLoc)   return false;
+      if (activeDays  >  0 && daysSince(j.posted_at) > activeDays)   return false;
+      if (!activeTypes.has(filterCat(j))) return false;
+      if (q && !(j.title+' '+j.company).toLowerCase().includes(q))   return false;
+      return true;
+    });
+
+    rows.sort((a,b) => {
+      let av = sortCol==='composite'?a._composite:a[sortCol];
+      let bv = sortCol==='composite'?b._composite:b[sortCol];
+      if (sortCol==='posted_at') { av=new Date(av||0); bv=new Date(bv||0); }
+      if (sortCol==='salary_max') { av=av||0; bv=bv||0; }
+      if (av<bv) return sortAsc?-1:1; if (av>bv) return sortAsc?1:-1; return 0;
+    });
+
+    if (perCoCap > 0) {
+      const cnt = {};
+      rows = rows.filter(j => { cnt[j.company]=(cnt[j.company]||0)+1; return cnt[j.company]<=perCoCap; });
+    }
+
+    const core = allJobs.filter(j=>j.match_category==='core').length;
+    const str  = allJobs.filter(j=>j.match_category==='stretch').length;
+    document.getElementById('stats').textContent =
+      allJobs.length>0 ? `${rows.length} shown · ${allJobs.length} total · ${core} core · ${str} stretch` : '';
+
+    const tbody = document.getElementById('jobs-body');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr class="erow"><td colspan="8">
+        <div class="eico">${allJobs.length===0?'⏳':'🔍'}</div>
+        <div>${allJobs.length===0?'Fetching jobs in background — results appear automatically.':'No roles match the current filters.'}</div>
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(j => {
+      const cs=j._composite, t=tier(cs), tm=TM[j.company_category]||TM.other;
+      const sal=fmtSal(j.salary_min,j.salary_max), date=fmtDate(j.posted_at);
+      const fresh=daysSince(j.posted_at)<=3, saved=isSaved(j);
+      const locCls=j.location_label==='SF Bay Area'?'loc-sf':'loc-nyc';
+      const key=jobKey(j);
+      return `<tr>
+        <td class="col-sc"><span class="tbar ${t}"></span><span class="sc-chip t-${t}">${cs}</span></td>
+        <td class="col-co">
+          <div class="co-name" title="${esc(j.company)}">${esc(j.company)}</div>
+          <span class="tbadge ${tm.cls}">${tm.label}</span>
+        </td>
+        <td class="col-ti">
+          <div class="ti-name" title="${esc(j.title)}">${esc(j.title)}</div>
+          <div class="ti-reason">💡 ${esc(j.match_reason)}</div>
+        </td>
+        <td class="col-lo"><span class="loc-pill ${locCls}">${esc(j.location_label)}</span></td>
+        <td class="col-sa">${sal?`<span class="sal-val">${esc(sal)}</span>`:'<span class="sal-none">—</span>'}</td>
+        <td class="col-po"><span class="${fresh?'po-fresh':'po-val'}">${date||'—'}</span></td>
+        <td class="col-mb"><span class="mb-badge ${j.match_category==='core'?'mb-core':'mb-stretch'}">${j.match_category==='core'?'Core':'Stretch'}</span></td>
+        <td class="col-ap">
+          <div class="ap-wrap">
+            <button class="bm-btn ${saved?'saved':''}" title="${saved?'Remove from saved':'Save job'}"
+              onclick="toggleSave('${esc(key)}')">${saved?'★':'☆'}</button>
+            <a class="apply-a" href="${esc(j.url)}" target="_blank" rel="noopener">Apply →</a>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Saved table ───────────────────────────────────────────
+  function renderSaved() {
+    document.getElementById('main-thead').innerHTML = `<tr>
+      <th class="col-sc">Score</th>
+      <th class="col-co">Company</th>
+      <th class="col-ti">Title</th>
+      <th class="col-lo">Location</th>
+      <th class="col-sa">Salary</th>
+      <th class="col-po">Saved</th>
+      <th class="col-st">Status</th>
+      <th class="col-ap"></th>
+    </tr>`;
+
+    const q = (document.getElementById('saved-search').value||'').toLowerCase();
+    const entries = Object.entries(savedJobs)
+      .map(([key,s]) => ({...s.job, _composite:compositeScore(s.job), _key:key, _status:s.status, _savedAt:s.saved_at, _notes:s.notes||''}))
+      .filter(j => !q || (j.title+' '+j.company).toLowerCase().includes(q))
+      .sort((a,b) => b._savedAt - a._savedAt);
+
+    // Status breakdown
+    const cts = {};
+    Object.values(savedJobs).forEach(s => { cts[s.status]=(cts[s.status]||0)+1; });
+    const parts = [];
+    if (cts.saved)        parts.push(`${cts.saved} saved`);
+    if (cts.applied)      parts.push(`${cts.applied} applied`);
+    if (cts.interviewing) parts.push(`${cts.interviewing} interviewing`);
+    if (cts.offer)        parts.push(`${cts.offer} offer 🎉`);
+    if (cts.rejected)     parts.push(`${cts.rejected} rejected`);
+    document.getElementById('saved-stats').textContent = parts.join(' · ') || '0 saved';
+
+    const tbody = document.getElementById('jobs-body');
+    if (!entries.length) {
+      tbody.innerHTML = `<tr class="erow"><td colspan="8">
+        <div class="eico">★</div>
+        <div>${Object.keys(savedJobs).length===0
+          ? 'No saved jobs yet. Click ☆ on any role in the Roles tab to save it.'
+          : 'No saved jobs match your search.'}</div>
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = entries.map(j => {
+      const isManual = !!j.manual;
+      const cs = j._composite;
+      const t = tier(cs);
+      const tm = TM[j.company_category] || TM.other;
+      const sal = fmtSal(j.salary_min, j.salary_max) || (isManual && j.salary_raw ? j.salary_raw : null);
+      const key = j._key, st = j._status || 'saved';
+
+      const scoreCell = isManual
+        ? '<span class="sc-chip" style="color:var(--sub);background:rgba(100,116,139,.12)">—</span>'
+        : `<span class="tbar ${t}"></span><span class="sc-chip t-${t}">${cs}</span>`;
+
+      const badge = isManual
+        ? '<span class="tbadge tb-manual">Manual</span>'
+        : `<span class="tbadge ${tm.cls}">${tm.label}</span>`;
+
+      const secondLine = isManual
+        ? (j._notes ? `<div class="ti-reason">${esc(j._notes)}</div>` : '')
+        : `<div class="ti-reason">💡 ${esc(j.match_reason)}</div>`;
+
+      const locHtml = j.location_label
+        ? `<span class="loc-pill ${j.location_label==='SF Bay Area'?'loc-sf':'loc-nyc'}">${esc(j.location_label)}</span>`
+        : j.location
+          ? `<span class="po-val">${esc(j.location)}</span>`
+          : '<span class="sal-none">—</span>';
+
+      const applyBtn = j.url
+        ? `<a class="apply-a" href="${esc(j.url)}" target="_blank" rel="noopener">${isManual?'View →':'Apply →'}</a>`
+        : '';
+
+      return `<tr>
+        <td class="col-sc">${scoreCell}</td>
+        <td class="col-co">
+          <div class="co-name" title="${esc(j.company)}">${esc(j.company)}</div>
+          ${badge}
+        </td>
+        <td class="col-ti">
+          <div class="ti-name" title="${esc(j.title)}">${esc(j.title)}</div>
+          ${secondLine}
+        </td>
+        <td class="col-lo">${locHtml}</td>
+        <td class="col-sa">${sal?`<span class="sal-val">${esc(sal)}</span>`:'<span class="sal-none">—</span>'}</td>
+        <td class="col-po"><span class="po-val">${fmtTs(j._savedAt)}</span></td>
+        <td class="col-st">
+          <select class="status-sel st-${st}" onchange="updateStatus('${esc(key)}',this.value);this.className='status-sel st-'+this.value">
+            <option value="saved"        ${st==='saved'?'selected':''}>Saved</option>
+            <option value="applied"      ${st==='applied'?'selected':''}>Applied</option>
+            <option value="interviewing" ${st==='interviewing'?'selected':''}>Interviewing</option>
+            <option value="offer"        ${st==='offer'?'selected':''}>Offer 🎉</option>
+            <option value="rejected"     ${st==='rejected'?'selected':''}>Rejected</option>
+          </select>
+        </td>
+        <td class="col-ap">
+          <div class="ap-wrap">
+            <button class="rm-btn" title="Remove" onclick="removeSaved('${esc(key)}')">✕</button>
+            ${applyBtn}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Sort handler (roles table only) ─────────────────────
+  function attachSortHandlers() {
+    document.querySelectorAll('#main-thead th[data-col]').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        sortAsc = (sortCol===col) ? !sortAsc : (col!=='composite');
+        sortCol = col;
+        renderRoles();
+      });
+    });
+  }
+
+  // ── Data loading ──────────────────────────────────────────
+  function loadJobs() {
+    fetch('/api/jobs').then(r=>r.json()).then(d => {
+      allJobs = (d.jobs||[]).map(j => ({...j, _composite:compositeScore(j)}));
+      // Rebuild jobsMap for safe save-button lookups
+      jobsMap = {};
+      allJobs.forEach(j => { jobsMap[jobKey(j)] = j; });
+      render();
+    }).catch(console.error);
+  }
+
+  function loadSaved() {
+    fetch('/api/saved').then(r=>r.json()).then(d => {
+      savedJobs = d;
+      updateSavedCount();
+      render();
+    }).catch(console.error);
+  }
+
+  // ── Status polling ────────────────────────────────────────
+  function pollStatus() {
+    fetch('/api/status').then(r=>r.json()).then(s => {
+      const dot=document.getElementById('sdot'), txt=document.getElementById('stxt');
+      dot.className = s.fetching?'fetching':s.error?'error':'';
+      const STAGES={discovering:'Discovering boards…',fetching:'Fetching postings…',filtering:'Filtering…',ranking:'Ranking…'};
+      if (s.fetching) txt.textContent = STAGES[s.stage]||'Fetching…';
+      else if (s.error) txt.textContent = 'Error: '+s.error;
+      else if (s.last_updated) {
+        const t=new Date(s.last_updated*1000).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        txt.textContent='Updated '+t+(s.job_count?' · '+s.job_count+' roles':'');
+      } else txt.textContent='Ready';
+      const done=lastFetching&&!s.fetching&&!s.error;
+      const newD=s.job_count>lastJobCount&&s.job_count>0;
+      if (done||newD) { loadJobs(); if(newD&&lastJobCount>0) showToast('Refreshed — '+s.job_count+' roles'); }
+      lastFetching=s.fetching; lastJobCount=s.job_count||lastJobCount;
+    }).catch(console.error);
+  }
+
+  function showToast(msg) {
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.style.display='block';
+    clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',3000);
+  }
+
+  // ── Filter controls ───────────────────────────────────────
+  document.querySelectorAll('#tab-bar .tab-btn').forEach(b =>
+    b.addEventListener('click', () => switchTab(b.dataset.tab))
+  );
+
+  document.querySelectorAll('#match-grp .pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#match-grp .pill').forEach(b => b.className='pill');
+      activeMatch=btn.dataset.match;
+      btn.className = {all:'pill on', core:'pill on-c', stretch:'pill on-s'}[activeMatch]||'pill on';
+      render();
+    });
+  });
+
+  document.querySelectorAll('#loc-grp .pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#loc-grp .pill').forEach(b => b.className='pill');
+      btn.className='pill on'; activeLoc=btn.dataset.loc; render();
+    });
+  });
+
+  document.querySelectorAll('#posted-grp .pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#posted-grp .pill').forEach(b => b.className='pill');
+      btn.className='pill on'; activeDays=+btn.dataset.days; render();
+    });
+  });
+
+  document.querySelectorAll('#cap-grp .pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#cap-grp .pill').forEach(b => b.className='pill');
+      btn.className='pill on'; perCoCap=+btn.dataset.cap; render();
+    });
+  });
+
+  document.querySelectorAll('.tpill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat=btn.dataset.cat;
+      activeTypes.has(cat)?activeTypes.delete(cat):activeTypes.add(cat);
+      btn.classList.toggle('on'); render();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('saved-search').addEventListener('input', render);
+
+  // ── Manual job modal ─────────────────────────────────
+  function openModal() {
+    document.getElementById('modal-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('scrape-url').focus(), 50);
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    ['scrape-url','f-company','f-title','f-location','f-salary','f-notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    const st = document.getElementById('scrape-status');
+    st.textContent = '';
+    const btn = document.getElementById('scrape-btn');
+    btn.disabled = false;
+    btn.textContent = 'Fetch Details';
+  }
+
+  async function fetchDetails() {
+    const url = document.getElementById('scrape-url').value.trim();
+    const status = document.getElementById('scrape-status');
+    if (!url) { status.style.color='var(--sub)'; status.textContent='Please enter a URL first.'; return; }
+    const btn = document.getElementById('scrape-btn');
+    btn.disabled = true; btn.textContent = 'Fetching…';
+    status.style.color = 'var(--sub)'; status.textContent = '';
+    try {
+      const r = await fetch('/api/scrape', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}),
+      });
+      const d = await r.json();
+      if (d.company)    document.getElementById('f-company').value  = d.company;
+      if (d.title)      document.getElementById('f-title').value    = d.title;
+      if (d.location)   document.getElementById('f-location').value = d.location;
+      if (d.salary_raw) document.getElementById('f-salary').value   = d.salary_raw;
+      if (d.scraped && !d.partial) {
+        status.style.color = 'var(--green)';
+        status.textContent = '✓ Details fetched — review and submit.';
+      } else if (d.scraped) {
+        status.style.color = 'var(--amber)';
+        status.textContent = '⚠ Partial details fetched — fill in missing fields.';
+      } else {
+        status.style.color = 'var(--sub)';
+        status.textContent = 'Could not scrape this page — fill in details manually.';
+      }
+    } catch(e) {
+      status.style.color = 'var(--red)';
+      status.textContent = 'Fetch failed — fill in details manually.';
+    }
+    btn.disabled = false; btn.textContent = 'Fetch Details';
+  }
+
+  async function submitManualJob() {
+    const company = document.getElementById('f-company').value.trim();
+    const title   = document.getElementById('f-title').value.trim();
+    const status  = document.getElementById('scrape-status');
+    if (!company || !title) {
+      status.style.color = 'var(--red)';
+      status.textContent = 'Company and Title are required.';
+      return;
+    }
+    const url        = document.getElementById('scrape-url').value.trim();
+    const location   = document.getElementById('f-location').value.trim();
+    const salary_raw = document.getElementById('f-salary').value.trim();
+    const notes      = document.getElementById('f-notes').value.trim();
+    const job = {
+      company, title, location, url, salary_raw,
+      salary_min: null, salary_max: null,
+      match_reason: '', match_category: 'manual',
+      score: null, posted_at: null,
+      company_category: 'other', board: 'manual',
+      manual: true,
+    };
+    const key = 'manual-' + (company+'||'+title).toLowerCase().replace(/[^a-z0-9|]+/g,'-');
+    await fetch('/api/saved', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key, job, status:'saved', notes}),
+    });
+    savedJobs[key] = {job, status:'saved', saved_at:Date.now()/1000, notes};
+    updateSavedCount();
+    closeModal();
+    if (activeTab==='saved') render();
+    showToast('Added to tracker ★');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+
+  // ── Boot ──────────────────────────────────────────────────
+  loadJobs();
+  loadSaved();
+  pollStatus();
+  setInterval(pollStatus, 10000);
+</script>
+</body>
+</html>
